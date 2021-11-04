@@ -1,48 +1,43 @@
+from matplotlib.pyplot import axis
 import pandas as pd
 import numpy as np
-import time 
+import time
+import dataframe_image as dfi
 
-# Enviar msg no Boot
-def envio_relatorio(mensagem):
+# Enviar msg
+def envio_extrato(message, image, contato):
     import requests
+    
+    url = "http://bot.transportta.online/send-media"
+    payload = {'number': contato, 'caption': message}
 
-    message = mensagem
-    url_send_message = 'http://151.106.108.32:5500/send-group-message'
-    data = {
-        'id':'558681889492-1629742189@g.us',
-        'message': message
-    }
-    requests.post(url_send_message, data=data)
+    files = [('file', ('baixados.png', image, 'image/png'))]
+    requests.request("POST", url, data=payload, files=files)
+    print('Extrato de Rota enviado no Whatsapp')
 
+# Ler as Bases -------
+dir = (r'I:\OneDrive\Professional\09 - Transportta\Sistema\Relatorio\extratoMotorista\Escala de Rotas 20.10.2021--18-09 -AT.xlsx')
+r2 = (r'I:\OneDrive\Professional\09 - Transportta\Sistema\Relatorio\extratoMotorista\motoristas.xlsx')
 
-def exportarImagem(detalhamento):
-    import dataframe_image as dfi
+dados = pd.read_excel(dir, sheet_name='ESCALA')
+rMotorista = pd.read_excel(r2, sheet_name='Relacao')
+#-----  Fim da Leitura
 
-    dfi.export(detalhamento, 'extratoRota.png')
-    print('Imagem Exportada!')
+motoristas = pd.DataFrame(dados['MOTORISTA'].unique(), columns=['MOTORISTA'])
 
-
-
-dir = (r'I:\OneDrive\Professional\09 - Transportta\Sistema\Relatorio\extratoMotorista\HistoricoRotas-2021-10-19_2021-10-19.xlsx')
-dados = pd.read_excel(dir, sheet_name='Planilha')
-
-motoristas = pd.DataFrame(dados['Motorista'].unique(),columns=['Motorista'])
-
-# print (dados['Motorista'].value_counts())
 
 for i, motorista in motoristas.iterrows():
-    relatorio=[]
-    relatorio.clear()
-    
+    contato = (rMotorista.loc[rMotorista['Motorista']==motorista]['Contato']).values[0]
+    extrato = []
+    extrato.clear()
+
     for index, row in dados.iterrows():
-        if motorista['Motorista'] == row['Motorista']:
-            relatorio.append(row['Rota'])
-    envio_relatorio(row['Rota'])
-    time.sleep(1)
+        if motorista['MOTORISTA'] == row['MOTORISTA']:
+            extrato.append([row['MOTORISTA'], row['ROTA'], row['HORARIOS']])
 
-    relatorio = pd.DataFrame(relatorio,columns=[motorista])
+    extrato = pd.DataFrame(extrato, columns=['Motorista', 'Rotas', 'Horarios'])
+    extrato = (extrato.pivot_table(index=["Motorista", "Rotas", "Horarios"], aggfunc=np.mean)).sort_values(by=['Horarios'], ascending=True)
 
-
-
-
-
+    time.sleep(2)
+    dfi.export(extrato, 'extratoRota.png')
+    envio_extrato('Extrato de Rotas do dia 20/10/21', open('extratoRota.png', 'rb').read(), f'55{contato}@c.us')
