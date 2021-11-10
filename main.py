@@ -27,7 +27,8 @@ motoristas = pd.DataFrame(dados['MOTORISTA'].unique(), columns=['MOTORISTA'])
 
 
 for i, motorista in motoristas.iterrows():
-    contato = (rMotorista.loc[rMotorista['Motorista']==motorista]['Contato']).values[0]
+    # contato = (rMotorista.loc[rMotorista['Motorista']=='motorista']['Contato']).values[0]
+    contato = (rMotorista.loc[rMotorista['Apelido']=='WESLLEY']['Contato']).values[0]
     extrato = []
     extrato.clear()
 
